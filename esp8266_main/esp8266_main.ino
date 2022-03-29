@@ -6,8 +6,7 @@
 #define BUTTON_COUNT 3
 #define PINGDELAY 50
 #define SOUND_MUL 0.0343
-#define COLOUR_STEP 8  //5 is okay but a bit slow
-
+#define COLOUR_STEP 1
 
 // Pins
 const int trigPins[SLIDER_COUNT] = {12, 13};  // array of trigger pins, current is D6 (GPIO 12) for left, D7 (GPIO 13) for right 
@@ -43,26 +42,18 @@ void setup() {
   }
 
   pinMode(echoPin, INPUT);  // shared echo pin
-  float test[3];
-  hsv2rgb(0.5, 1.0, 1.0, test);
-  Serial.print(test[0]);
-  Serial.print('-');
-  Serial.print(test[1]);
-  Serial.print('-');
-  Serial.print(test[2]);
-
-  
+ 
   attachInterrupt(digitalPinToInterrupt(14), ISR_ECHO, CHANGE);  // interrupt CPU 0 when slider detects change, might cause button to halt
   lastPing = millis();  // get current milisecond for delay later
 }
 
 
-float distance2hue(float dist) {
+float distance2colourval(float dist) {
   // Expects a distance in cm
   // Return normalized hue from 0.0 to 1.0 if distance is less than max slider distance, else returns 0
   // Will not be used in final proto cos it has 3 sensors for direct RGB
   
-  return (dist < SLIDER_DIST) ? ((SLIDER_DIST - dist) / (SLIDER_DIST - 2)) : 0;
+  return (dist < SLIDER_DIST) ? ((dist - 2) / (SLIDER_DIST - 2)) : 0;
 }
 
 void doMeasurement() {
@@ -97,27 +88,29 @@ void doMeasurement() {
   }
 }
 
-void setColours(float hue) {
-  // expects a float representing hue from 0.0 to 1.0
+void setColours(float hue, float brightness) {
+  // expects a float representing hue from 0.0 to 1.0, and a float representing brightness from 0.0 to 1.0
   // Will set the common cathode LED to the appropriate colour
 
   float rgb[3];
-  hsv2rgb(hue, 1.0, 1.0, rgb);  // Test if will have bug, I guess no cos modified in place
+  hsv2rgb(hue, 1.0, brightness, rgb);  // Test if will have bug, I guess no cos modified in place
 
-  int red = (int)(rgb[0] * 255);
-  int green = (int)(rgb[1] * 255);
-  int blue = (int)(rgb[2] * 255);
+//  int red = (int)(rgb[0] * 255);
+//  int green = (int)(rgb[1] * 255);
+//  int blue = (int)(rgb[2] * 255);
 
   #ifdef COMMON_ANODE
-    red = 255 - red;
-    green = 255 - green;
-    blue = 255 - blue;
+    rgb[0] = 255 - rgb[0];
+    rgb[1] = 255 - rgb[1];
+    rgb[2] = 255 - rgb[2];
   #endif
 
+  Serial.println(String(hue) + '-' + brightness + '-' + rgb[0] + '-' + rgb[1] + '-' + rgb[2]);
+  
   // cross fade code
-  old_rgb[0] = (red > old_rgb[0]) ? old_rgb[0] + COLOUR_STEP : old_rgb[0] - COLOUR_STEP;
-  old_rgb[1] = (green > old_rgb[1]) ? old_rgb[1] + COLOUR_STEP : old_rgb[1] - COLOUR_STEP;
-  old_rgb[2] = (blue > old_rgb[2]) ? old_rgb[2] + COLOUR_STEP : old_rgb[2] - COLOUR_STEP;
+  old_rgb[0] = (rgb[0] > old_rgb[0]) ? old_rgb[0] + COLOUR_STEP : old_rgb[0] - COLOUR_STEP;
+  old_rgb[1] = (rgb[1] > old_rgb[1]) ? old_rgb[1] + COLOUR_STEP : old_rgb[1] - COLOUR_STEP;
+  old_rgb[2] = (rgb[2] > old_rgb[2]) ? old_rgb[2] + COLOUR_STEP : old_rgb[2] - COLOUR_STEP;
   
   analogWrite(ledPins[0], old_rgb[0]);
   analogWrite(ledPins[1], old_rgb[1]);
@@ -130,10 +123,13 @@ void loop() {
 
   if (millis() - lastPing >= PINGDELAY) {
     doMeasurement();
+    float hue = distance2colourval(distances[0]);
+    float brightness = distance2colourval(distances[1]);
+
     Serial.println(String("L Sensor: ") + distances[0] + " cm" + ' ' + String("R Sensor: ") + distances[1] + " cm");  // print distance
-    float hue = distance2hue(distances[0]);
-    setColours(hue);
+    setColours(hue, brightness);
   }
+  
   // Button press code
 //
 //  int button_1 = digitalRead(buttonPins[0]);
@@ -148,7 +144,7 @@ void loop() {
 
 ICACHE_RAM_ATTR void ISR_ECHO() {
   // Set up ISR to be stored in RAM
-  // Further speedups with direct port register control https://www.instructables.com/Faster-ESP32/
+  // Further speedups with direct port register control https://www.instructables.com/Faster-ESP32/ --> ESP8266 and ESP32 as it is is fast enough already, plus digitalRead is an alias
   int pinRead = digitalRead(echoPin);
   if (pinRead) {
     // High state --> Start timer for echo
