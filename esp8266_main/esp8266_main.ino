@@ -1,7 +1,7 @@
 #include "hsvtorgb.h"
 #include <ESP8266WiFi.h>
 // #define COMMON_ANODE  // just to invert the calculations for RGB
-#define SLIDER_DIST 25
+#define SLIDER_DIST 30
 #define SLIDER_COUNT 2
 #define BUTTON_COUNT 3
 #define PINGDELAY 50
