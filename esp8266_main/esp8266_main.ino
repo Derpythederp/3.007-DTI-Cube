@@ -149,6 +149,7 @@ ICACHE_RAM_ATTR void ISR_ECHO() {
   if (pinRead) {
     // High state --> Start timer for echo
     startEcho = micros();
+    
   }
   else {
     // Low state --> Stop timer for echo

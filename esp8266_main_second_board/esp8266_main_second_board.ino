@@ -3,6 +3,15 @@
 // #define COMMON_ANODE  // just to invert the calculations for RGB
 #define COLOUR_STEP 8 
 
+// For this other board, prototype is to have:
+// 1) Common Cathode LED changing
+// 2) Working Button press
+
+
+typedef struct cube_now {
+  int button_states[5];  // send over button states as either a 1 for pressed or 0 for released.
+  int slider_states[3];  // send over slider state, to process on the receiver as LED states
+}cube_now;
 
 // Pins
 const int trigPins[SLIDER_COUNT] = {12, 13};  // array of trigger pins, current is D6 (GPIO 12) for left, D7 (GPIO 13) for right 
@@ -135,6 +144,3 @@ void loop() {
 //    Serial.println("Button was pressed!");
 //  }
 }
-
-
-// This second board doesn't have the ultrasonic sensor, it is simply a common cathode led
