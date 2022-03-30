@@ -8,8 +8,8 @@ Tis but a cube. Two cubes to be exact.
 Made from ESP8266 to test ultrasonic sensors and light. Uses 2 sensors corresponding to Hue and Brightness for HSB/HSV which is then converted to RGB to control light levels using PWM.
 
 <p float="middle">
-  <img src="assets/proto_1.png" width="50%" />
-  <img src="assets/proto_1_irl.png" width="50%" />
+  <img src="assets/proto_1.png" width="48%" />
+  <img src="assets/proto_1_irl.png" width="48%" />
 </p>
 
 ## Prototype 2
