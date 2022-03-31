@@ -4,9 +4,9 @@
 #define SLIDER_DIST 30
 #define SLIDER_COUNT 2
 #define BUTTON_COUNT 3
-#define PINGDELAY 50
+#define PINGDELAY 100
 #define SOUND_MUL 0.0343
-#define COLOUR_STEP 1
+#define COLOUR_STEP 0.5
 
 // Pins
 /* 
@@ -95,6 +95,7 @@ void setup() {
 
   for (int i = 0; i < 3; i++) {
     // Each LED has its own channel lol, they ain't sharing
+    ledcSetup(i, 1000, 10);  // channel, frequency, resolution
     ledcAttachPin(ledPins[i], i);
   }
 
