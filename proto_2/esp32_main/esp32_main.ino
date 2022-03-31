@@ -1,5 +1,5 @@
 #include "hsvtorgb.h"
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
 // #define COMMON_ANODE  // just to invert the calculations for RGB
 #define SLIDER_DIST 30
 #define SLIDER_COUNT 2
@@ -9,6 +9,60 @@
 #define COLOUR_STEP 1
 
 // Pins
+/* 
+ESP32 in use is the 30 pin version, the flash pins are not exposed.
+ESP32 is wired currently with:
+Common Cathode LED (To be replaced with Neopixel which takes only one data line)
+-------------------------------------------------
+Red - D27
+Green - D26
+Blue - D25
+
+Left ultrasound sensor (viewed from back)
+----------------------
+Trigger - D13
+Shared Echo - D14
+
+Middle ultrasound sensor (TBA)
+------------------------------
+Trigger - 
+Shared Echo - D14
+
+Right ultrasound sensor
+-----------------------
+Trigger - D12
+Shared Echo - D14
+
+Buttons
+-------
+BT1 - D15
+BT2 - D2
+BT3 - D4
+BT4 (TBA)- D35
+BT5 (TBA) - D34
+
+Speaker 
+-------------
+Input - D21
+
+SD Card Reader(TBA)
+-------------------
+SPI so 4 pins expected
+
+Candidate SPI channels are:
+SPI   |MOSI    |MISO    |CLK     |CS
+VSPI  |GPIO 23 |GPIO 19 |GPIO 18 |GPIO 5
+HSPI  |GPIO 13 |GPIO 12 |GPIO 14 |GPIO 15
+Flash SPI is taken up already in 30 pin version, and you can't use it anyways
+
+Use VSPI
+MOSI - D23
+MISO - D19
+CLK - D18
+CS - D5
+
+*/
+
 const int trigPins[SLIDER_COUNT] = {12, 13};  // array of trigger pins, current is D6 (GPIO 12) for left, D7 (GPIO 13) for right 
 const int echoPin = 14;  // shared echo pin for all 3 sensors, current GPIO 14 or D5
 const int buttonPins[BUTTON_COUNT] = {16, 5, 4};  // currently 3, D0, D1, D2
