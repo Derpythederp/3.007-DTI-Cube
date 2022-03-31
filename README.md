@@ -16,7 +16,7 @@ Made from ESP8266 to test ultrasonic sensors and light. Uses 2 sensors correspon
 Ported Prototype 1 code to Prototype 2 which is instead done on an ESP32 board. The biggest advantage of this is the fact that I get to play with 36 (30 usable) GPIO pins instead of the 17 on ESP8266 (in reality the usable pins are like 10 pins only). Multiprocessing and Bluetooth is an extra plus.
 
 ### Tasklists and features
-- [-] Prototype 1 code ported to ESP32
+- [x] Prototype 1 code ported to ESP32
 - [ ] Button handler for 3 buttons
 - [ ] Neopixel control instead of common cathode LED
 - [ ] Connectivity with other ESP boards using ESPNow and packet structure
