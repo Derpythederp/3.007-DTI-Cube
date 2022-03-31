@@ -63,10 +63,12 @@ CS - D5
 
 */
 
-const int trigPins[SLIDER_COUNT] = {12, 13};  // array of trigger pins, current is D6 (GPIO 12) for left, D7 (GPIO 13) for right 
-const int echoPin = 14;  // shared echo pin for all 3 sensors, current GPIO 14 or D5
-const int buttonPins[BUTTON_COUNT] = {16, 5, 4};  // currently 3, D0, D1, D2
-const int ledPins[3] = {15, 0, 2};  // currently Red is D8, Blue is D3, Green is D4
+const int trigPins[SLIDER_COUNT] = {12, 13};  // From front, left and right, middle tba
+const int echoPin = 14;  
+const int buttonPins[BUTTON_COUNT] = {15, 2, 4};    // 35 and 34 doesn't have buttons yet
+const int ledPins[3] = {27, 26, 25};  
+const int speakerPin = 21;
+
 
 // Stored states, buttons and hue value
 float hue;
@@ -81,7 +83,7 @@ void ISR_ECHO();
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("BOOTED ESP8266... Serial connected!");
+  Serial.println();
   
   for (int i = 0; i < SLIDER_COUNT; i++) {
     pinMode(trigPins[i], OUTPUT);
@@ -92,10 +94,13 @@ void setup() {
   }
 
   for (int i = 0; i < 3; i++) {
-    pinMode(ledPins[i], OUTPUT);
+    // Each LED has its own channel lol, they ain't sharing
+    ledcAttachPin(ledPins[i], i);
   }
 
   pinMode(echoPin, INPUT);  // shared echo pin
+
+  pinMode(speakerPin, OUTPUT);
  
   attachInterrupt(digitalPinToInterrupt(14), ISR_ECHO, CHANGE);  // interrupt CPU 0 when slider detects change, might cause button to halt
   lastPing = millis();  // get current milisecond for delay later
@@ -104,9 +109,7 @@ void setup() {
 
 float distance2colourval(float dist) {
   // Expects a distance in cm
-  // Return normalized hue from 0.0 to 1.0 if distance is less than max slider distance, else returns 0
-  // Will not be used in final proto cos it has 3 sensors for direct RGB
-  
+  // Return normalized value from 0.0 to 1.0 if distance is less than max slider distance, else returns 0
   return (dist < SLIDER_DIST) ? ((dist - 2) / (SLIDER_DIST - 2)) : 0;
 }
 
@@ -165,10 +168,11 @@ void setColours(float hue, float brightness) {
   old_rgb[0] = (rgb[0] > old_rgb[0]) ? old_rgb[0] + COLOUR_STEP : old_rgb[0] - COLOUR_STEP;
   old_rgb[1] = (rgb[1] > old_rgb[1]) ? old_rgb[1] + COLOUR_STEP : old_rgb[1] - COLOUR_STEP;
   old_rgb[2] = (rgb[2] > old_rgb[2]) ? old_rgb[2] + COLOUR_STEP : old_rgb[2] - COLOUR_STEP;
-  
-  analogWrite(ledPins[0], old_rgb[0]);
-  analogWrite(ledPins[1], old_rgb[1]);
-  analogWrite(ledPins[2], old_rgb[2]);
+
+
+  ledcWrite(0, old_rgb[0]);
+  ledcWrite(1, old_rgb[1]);
+  ledcWrite(2, old_rgb[2]);
 }
 
 void loop() {
@@ -196,21 +200,16 @@ void loop() {
 }
 
 
-ICACHE_RAM_ATTR void ISR_ECHO() {
+void IRAM_ATTR ISR_ECHO() {
   // Set up ISR to be stored in RAM
   // Further speedups with direct port register control https://www.instructables.com/Faster-ESP32/ --> ESP8266 and ESP32 as it is is fast enough already, plus digitalRead is an alias
   int pinRead = digitalRead(echoPin);
   if (pinRead) {
     // High state --> Start timer for echo
     startEcho = micros();
-    
   }
   else {
     // Low state --> Stop timer for echo
     stopEcho = micros();
   }
 }
-
-
-// Tasklist:
-// Smooth out the ultrasonic sensor readings
