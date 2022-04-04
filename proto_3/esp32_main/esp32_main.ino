@@ -6,7 +6,7 @@
 
 // #define COMMON_ANODE  // just to invert the calculations for RGB
 #define SLIDER_DIST 30
-#define SLIDER_COUNT 2
+#define SLIDER_COUNT 1
 #define BUTTON_COUNT 3
 #define PINGDELAY 100
 #define SOUND_MUL 0.0343
@@ -26,28 +26,16 @@ WS2812B
 --------
 Data - D27
 
-Left ultrasound sensor (viewed from back)
+Ultrasound sensor for single slider(viewed from back)
 ----------------------
 Trigger - D13
 Shared Echo - D14
-
-//Middle ultrasound sensor (TBA)
-//------------------------------
-//Trigger - 
-//Shared Echo - D14
-//
-//Right ultrasound sensor
-//-----------------------
-//Trigger - D12
-//Shared Echo - D14
 
 Buttons
 -------
 BT1 - D15
 BT2 - D2
 BT3 - D4
-BT4 (TBA)- D35
-BT5 (TBA) - D34
 
 Speaker 
 -------------
@@ -71,11 +59,15 @@ CS - D5
 
 */
 
-const int trigPins[SLIDER_COUNT] = {12, 13};  // From front, left and right, middle tba
+const int trigPins[SLIDER_COUNT] = {13};  // From front, left and right, middle tba
 const int echoPin = 14;  
 const int buttonPins[BUTTON_COUNT] = {15, 2, 4};    // 35 and 34 doesn't have buttons yet
 const int ledPins[3] = {27, 26, 25};  
 const int speakerPin = 21;
+const int SD_MOSI = 23;
+const int SD_MISO = 19;
+const int SD_CLK = 18;
+const int SD_CS = 5;
 
 
 // Stored states, buttons and hue value
@@ -107,6 +99,22 @@ void setup() {
     ledcAttachPin(ledPins[i], i);
   }
 
+  SD.begin(SD_CS);  // SD object is a singleton for one SD card
+  if (!SD.begin(SD_CS)) {
+    Serial.println("SD Card initialization failure");
+    return;
+  }
+  
+  File file = SD.open("/joke.txt")  // obtain file handle
+  if (!file) {
+    Serial.println("joke.txt does not exist. Creating file...");
+    writeFile(SD, "/joke.txt", "Why did the chicken cross the road? \r\nHow else is she going to get to the other side?"); 
+  }
+  else {
+    Serial.println("No one likes to listen to the same awful joke twice");
+  }
+  file.close();  // ensure you close your file handle when you finish writing
+  
   pinMode(echoPin, INPUT);  // shared echo pin
 
   pinMode(speakerPin, OUTPUT);
@@ -114,6 +122,11 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(14), ISR_ECHO, CHANGE);  // interrupt CPU 0 when slider detects change, might cause button to halt
   lastPing = millis();  // get current milisecond for delay later
 }
+
+
+void readFile();
+void writeFile();
+void readWAV();
 
 
 float distance2colourval(float dist) {
