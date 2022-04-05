@@ -20,6 +20,8 @@ Ported Prototype 1 code to Prototype 2 which is instead done on an ESP32 board. 
 Prototype 2 continued. The plan changed, there is only 1 ultrasonic sensor (for 1 slider), 3 buttons. This should be the full prototype with the WS2812B LED strip (FastLED library), ESPNow networking, speakers and SD card reader.
 
 
+![Prototype 3](/assets/DTI_Cube_Proto.png)
+
 ## Tasklists and features
 - [x] Prototype 1 code ported to ESP32
 - [ ] Button handler for 3 buttons
