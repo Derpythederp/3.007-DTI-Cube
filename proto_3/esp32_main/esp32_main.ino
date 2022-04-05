@@ -39,6 +39,9 @@ BT1 - D15
 BT2 - D2
 BT3 - D4
 
+Should the buttons light up? To indicate which button to hit?
+
+
 Speaker 
 -------------
 Input - D21
@@ -64,7 +67,6 @@ CS - D5
 const int trigPins[SLIDER_COUNT] = {13};  // From front, left and right, middle tba
 const int echoPin = 14;  
 const int buttonPins[BUTTON_COUNT] = {15, 2, 4};    // 35 and 34 doesn't have buttons yet
-const int ledPins[3] = {27, 26, 25};  
 const int speakerPin = 21;
 const int SD_MOSI = 23;
 const int SD_MISO = 19;
@@ -95,12 +97,6 @@ void setup() {
     pinMode(buttonPins[i], INPUT);
   }
 
-  for (int i = 0; i < 3; i++) {
-    // Each LED has its own channel lol, they ain't sharing
-    ledcSetup(i, 1000, 10);  // channel, frequency, resolution
-    ledcAttachPin(ledPins[i], i);
-  }
-
   SD.begin(SD_CS);  // SD object is a singleton for one SD card
   if (!SD.begin(SD_CS)) {
     Serial.println("SD Card initialization failure");
@@ -126,11 +122,6 @@ void setup() {
 }
 
 
-void readFile();
-void writeFile();
-void readWAV();
-
-
 float distance2colourval(float dist) {
   // Expects a distance in cm
   // Return normalized value from 0.0 to 1.0 if distance is less than max slider distance, else returns 0
@@ -147,8 +138,6 @@ void doMeasurement() {
     startEcho = 0;  // Reset start
     stopEcho = 0;  // Reset stop time
 
-    //    digitalWrite(trigPins[s], LOW);
-    //    delayMicroseconds(5);  // not required as loop is slow enough
     digitalWrite(trigPins[s], HIGH); 
     delayMicroseconds(10);
     digitalWrite(trigPins[s], LOW);
@@ -174,19 +163,13 @@ void setColours(float hue, float brightness) {
   // Will set the common cathode LED to the appropriate colour
 
   float rgb[3];
-  hsv2rgb(hue, 1.0, brightness, rgb);  // Test if will have bug, I guess no cos modified in place
-
-//  int red = (int)(rgb[0] * 255);
-//  int green = (int)(rgb[1] * 255);
-//  int blue = (int)(rgb[2] * 255);
+  hsv2rgb(hue, 1.0, brightness, rgb); 
 
   #ifdef COMMON_ANODE
     rgb[0] = 255 - rgb[0];
     rgb[1] = 255 - rgb[1];
     rgb[2] = 255 - rgb[2];
   #endif
-
-  Serial.println(String(hue) + '-' + brightness + '-' + rgb[0] + '-' + rgb[1] + '-' + rgb[2]);
   
   // cross fade code
   old_rgb[0] = (rgb[0] > old_rgb[0]) ? old_rgb[0] + COLOUR_STEP : old_rgb[0] - COLOUR_STEP;
@@ -206,18 +189,14 @@ void loop() {
   if (millis() - lastPing >= PINGDELAY) {
     doMeasurement();
     float hue = distance2colourval(distances[0]);
-    float brightness = distance2colourval(distances[1]);
-
-    Serial.println(String("L Sensor: ") + distances[0] + " cm" + ' ' + String("R Sensor: ") + distances[1] + " cm");  // print distance
-    setColours(hue, brightness);
+    Serial.println(String("Slider Sensor: ") + distances[0] + " cm");  // print distance
+    setColours(hue, 1.0);
   }
+
+  // if (millis() - lastNote >= NOTEDELAY[CURR_NOTE]) && (randomButton ==  {
+    // playWav(CURR_NOTE, speakerPin);
+
   
-  // Button press code
-//
-//  int button_1 = digitalRead(buttonPins[0]);
-//  int button_2 = digitalRead(buttonPins[1]);
-//  int button_3 = digitalRead(buttonPins[2]);
-//
 //  if (button_1 || button_2 || button_3) {
 //    Serial.println("Button was pressed!");
 //  }
