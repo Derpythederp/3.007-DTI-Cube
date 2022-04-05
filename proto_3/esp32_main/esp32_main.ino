@@ -25,6 +25,8 @@ Blue - D25
 WS2812B
 --------
 Data - D27
+If no one interacts with cube, i.e change to distance is below threshold and 
+the button is not pressed, the microcontroller turns the light to white.
 
 Ultrasound sensor for single slider(viewed from back)
 ----------------------

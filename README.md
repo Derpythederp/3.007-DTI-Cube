@@ -29,4 +29,8 @@ Prototype 2 continued. The plan changed, there is only 1 ultrasonic sensor (for 
   - [ ] Core 0 pinned to poll for incoming network packets and process them by changing cube colour
   - [ ] Core 1 pinned to interrupt on slider and button changes, and process them and send them as outgoing packets 
 - [ ] Speaker code
+  - [ ] FAT32 read from VSPI (CS pin D5)
+  - [ ] Send mono audio to speaker
 - [ ] WS2812B code
+  - [ ] Turn the LED idle state (when not much interaction) to white light
+- [ ] Schematics for final prototype
