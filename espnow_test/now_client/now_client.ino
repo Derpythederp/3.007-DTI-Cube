@@ -1,11 +1,10 @@
-// Simple echo test with ESPNow
+// Simple echo test with ESPNow (Client side code)
 // There will be two modules:
 // 1) Barebones ESP32 will the the client, will have a readStringUntil("\r\n") which will let you change the hue of the remote boi
 // 2) ESP32 with all the electronics will be the server, and it will change its singular WS2812B LED strip color
 // while having an callback for recieving data that it will send soundncolorsremote back
 
 #include <WiFi.h>
-#include <FastLED.h>
 #include <esp_now.h>
 #define BUTTON_COUNT 1
 #define REMOTE_BUTTON_COUNT 1
@@ -30,16 +29,16 @@ int ESPNow_Fail_Count = 0;
 
 struct soundncolorslocal {
   float hue;
-  bool *buttonState[BUTTON_COUNT];
+  bool buttonState[BUTTON_COUNT];
 };  // local is the current device 
 
 struct soundncolorsremote{
   float hue;
-  bool *buttonState[REMOTE_BUTTON_COUNT];
+  bool buttonState[REMOTE_BUTTON_COUNT];
 };  // remote is the other device
 
-struct soundncolorslocal localData = {{128}, {false}};  // localData is what is sent over
-struct soundncolorsremote remoteData = {{128}, {false}};  // remoteData is what is to be sent out
+struct soundncolorslocal localData = {128, {false}};  // localData is what is sent over
+struct soundncolorsremote remoteData = {128, {false}};  // remoteData is what is to be sent out
 
 
 void initESPNow() {
@@ -54,9 +53,9 @@ void initESPNow() {
     if (ESPNow_Fail_Count > MAX_ESPNOW_FAILURES) {
       Serial.println("Too many failures. Restarting board.");
       ESP.restart();
+    }
   }
 }
-
 
 void sendData() {
   // Used by barebones ESPNow to send soundncolorsremote to broadcastAddress
@@ -70,7 +69,7 @@ void sendData() {
     Serial.print(remoteData.buttonState[i]);
   }
   Serial.println();
-  esp_err_t sendStatus = esp_now_send(broadcastAddress, &remoteData, sizeof(soundncolorsremote));
+  esp_err_t sendStatus = esp_now_send(broadcastAddress, (uint8_t *)&remoteData, sizeof(soundncolorsremote));
 
   if (sendStatus == ESP_OK) {
     Serial.println("Sent data to remote successfully.");
@@ -90,7 +89,7 @@ void initBroadcastPeer() {
   }
 
   if (DEBUG_PAIR) {
-    if (esp_now_is_peer_exist(peer_addr)) {
+    if (esp_now_is_peer_exist(remote.peer_addr)) {
       Serial.println("LOL you did not sucessfully pair with remote.");
     } else {
       Serial.println("Remote has been paired with successfully");
@@ -129,9 +128,9 @@ void setup() {
 
 void loop() {
   if (Serial.available()) {
-    if (Serial.readStringUntil("\n") == "Send") {
+    if (Serial.readStringUntil('\n') == "Send") {
       Serial.println("Send Hue below as an integer from 0-255");
-      int soundncolorsremote.hue[0] = Serial.readStringUntil("\n").toFloat();
+      remoteData.hue = Serial.readStringUntil('\n').toFloat();
       sendData();
     }
   }
