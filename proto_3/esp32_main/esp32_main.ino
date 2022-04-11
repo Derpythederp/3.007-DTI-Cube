@@ -3,7 +3,7 @@
 #include <SPI.h>
 #include <SD.h>
 #include "read_write.h"
-#include "hsvtorgb.h"
+#include "XT_DAC_AUDIO/XT_DAC_Audio.h"
 
 #define SLIDER_DIST 30
 #define SLIDER_COUNT 1
@@ -74,6 +74,8 @@ const int SD_CS = 5;
 const int ledPin = 27;
 const uint8_t broadcastAddress[6] = {};  // to be added 
 bool buttonState = 0;
+
+// XT_Wav_Class 
 
 // Stored states, buttons and hue value
 struct {
