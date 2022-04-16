@@ -2,7 +2,7 @@
 #include <FastLED.h>
 #include <SPI.h>
 #include <SD.h>
-#include "XT_DAC_AUDIO/XT_DAC_Audio.h"
+#include "DAC_Audio.h"
 
 #define SLIDER_DIST 15
 
@@ -70,7 +70,7 @@ CS - D5
 const int trigPin = 13;
 const int echoPin = 14;  
 const int speakerPin = 25;
-const int ledPins = {26, 27};
+const int ledPins[] = {26, 27};
 const int buttonPin = 15;
 //const int SD_MOSI = 23;
 //const int SD_MISO = 19;
@@ -231,7 +231,7 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int data_l
   if (remoteData.noteCount != localData.noteCount) {
     // update noteCount to the new value, the checks for noteCount is done by sender
     remoteData.noteCount = localData.noteCount;
-//    playSound(MusicSheet[localData.noteCount]);
+    playSound(MusicSheet[localData.noteCount]);
     lastPlayed = millis();  // update timer
   }
 }
@@ -283,15 +283,6 @@ void setColours() {
 
 void checkButton() {
   // Debounce protection
-  if (digitalRead(buttonPin) && ((millis() - lastClicked) > DEBOUNCEINTERVAL)) {
-    lastClicked = millis();  // last successful click
-    // If next note is ready, then register the button press
-//    if (millis() - lastPlayed > noteDelay[localData.noteCount]) {}  
-  }
-}
-
-void checkButton() {
-  // Debounce protection
   // Add check for release
   if (digitalRead(buttonPin) && ((millis() - lastClicked) > DEBOUNCEINTERVAL)) {
     lastClicked = millis();  // last successful click
@@ -303,23 +294,62 @@ void checkButton() {
   }
 }
 
+void checkNewSong() {
+    if (Music.Playing==false && Music2.Playing==false && Music3.Playing==false && Music4.Playing==false) {
+    Serial.println("Switching Songs!");
+    songPlaying++;
+    switch (songPlaying % NUM_SONGS) {
+      case 0:
+        Serial.println("Playing Twinkle Piano");
+        DacAudio.Play(&Music, false);
+        currentMusic = &Music;
+        break;
+      case 1:
+        Serial.println("Playing Twinkle Organ");
+        DacAudio.Play(&Music2, false);
+        currentMusic = &Music2; 
+        break;        
+      case 2:
+        Serial.println("Playing Amongus");
+        DacAudio.Play(&Music3, false);
+        currentMusic = &Music3;
+        break;
+      case 3:
+        Serial.println("Playing Sailing Sailing");
+        DacAudio.Play(&Music4, false);
+        currentMusic = &Music4;
+        break;    
+    }
+    noteCount = 0;  // reset note count for the next song
+  }
+}
+
 // Main logic and loops
 void setup() {
   Serial.begin(115200);
   Serial.println();
+
+  // Init WiFi and ESPNow
+  WiFi.mode(WIFI_STA);
+  initESPNow();
+  esp_now_register_recv_cb(OnDataRecv);
+  initBroadcastPeer();
   
   pinMode(trigPin, OUTPUT);
   pinMode(buttonPin, INPUT);
   pinMode(echoPin, INPUT); 
   pinMode(speakerPin, OUTPUT); // Need code in the timer and beep noises
 
-  
+  // Init ulrasonic sensors
   attachInterrupt(digitalPinToInterrupt(echoPin), ISR_ECHO, CHANGE);  // interrupt CPU 0 when slider detects change, might cause button to halt
   lastPing = millis();  // get current milisecond for delay later
-  
+
+
+  // Init LED strips
   FastLED.addLeds<WS2812B, ledPin[0], RGB>(ledOne, ledCounts[0]);
   FastLED.addLeds<WS2812B, ledPin[1], RGB>(ledTwo, ledCounts[1]);
 
+  // Init audio files locally
   DacAudio.Play(&Music);       
   currentMusic = &Music;
 }
@@ -328,16 +358,20 @@ void setup() {
 void loop() {
   // loop mainly does a check for time from last ping, and if it has been long enough it does a measurement, followed by updating the LED with the output
   // loop also checks for button presses, if any buttonPins is pressed, or pulled high, for now it just prints 
-
+  checkButton();
+  DacAudio.FillBuffer();
+  checkNewSong();
+  
   if (millis() - lastPing >= PINGDELAY) {
     doMeasurement();
     float hue = distance2colourval(distance);
-    Serial.println(String("Slider Sensor: ") + distance + " cm");  // print distance
+    
+    if (DEBUG)
+      Serial.println(String("Slider Sensor: ") + distance + " cm");  // print distance
+      
     setColours(hue);
   }
   
-  // if (millis() - lastNote >= NOTEDELAY[CURR_NOTE]) && (randomButton ==  {
-    // playWav(CURR_NOTE, speakerPin);
 }
 
 
