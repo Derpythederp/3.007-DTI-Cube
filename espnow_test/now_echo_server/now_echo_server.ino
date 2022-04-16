@@ -13,6 +13,7 @@
 #define NUM_LEDS 1
 #define CHANNEL 1  // Both sender and receiever has to be on the same channel
 #define DEBUG_PAIR 0  // if true, then esp_now_is_peer_exist will be called as an additional check
+#define COLOUR_STEP 0.2
 
 void OnDataRecv();
 const int ledPin = 27;
@@ -20,6 +21,7 @@ const uint8_t broadcastAddress[6] = {0x58, 0xBF, 0x25, 0x14, 0x50, 0xA0};  // Ba
 esp_now_peer_info_t remote;  // set up remote peer info
 int ESPNow_Fail_Count = 0;
 CRGB leds[NUM_LEDS];
+float oldHue = 128;
 
 struct soundncolorslocal {
   float hue;
@@ -30,7 +32,6 @@ struct soundncolorsremote{
   float hue;
   bool buttonState[REMOTE_BUTTON_COUNT];
 };  // remote is the other device
-
 
 struct soundncolorslocal localData = {128, {false}};
 struct soundncolorsremote remoteData = {128, {false}};
@@ -126,10 +127,15 @@ void setup() {
   initBroadcastPeer();
 }
 
-void loop() {
-  // update led
+void setColours() {
+    // update led 
+  oldHue = (localData.hue > oldHue) ? oldHue + COLOUR_STEP : oldHue - COLOUR_STEP;
   for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i].setHue(localData.hue);
+    leds[i].setHue(oldHue);
   }
   FastLED.show();
+}
+
+void loop() {
+  setColours();
 }
