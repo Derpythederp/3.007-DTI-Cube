@@ -19,20 +19,29 @@ Ported Prototype 1 code to Prototype 2 which is instead done on an ESP32 board. 
 ## Prototype 3
 Prototype 2 continued. The plan changed, there is only 1 ultrasonic sensor (for 1 slider), 3 buttons. This should be the full prototype with the WS2812B LED strip (FastLED library), ESPNow networking, speakers and SD card reader.
 
+Update: ESPNow networking was initialized but not used in this prototype. Prototype 4 will fully implement the networking. At this stage, all other logic, including idling locally are implemented.
 
-![Prototype 3](/assets/DTI_Cube_Proto.png)
+
+
+## Prototype 4
+Basically the same goals as prototype 3 but prototype 3 was a local implementation of everything. Prototype 4 will include the final part, that is networking using ESPNow to play audio and control the other cube.
+
+![Final Prototype](/assets/DTI_Cube_Proto.png)
 
 ## Tasklists and features
 - [x] Prototype 1 code ported to ESP32
-- [ ] Button handler for 3 buttons
-- [ ] Neopixel control 
-- [ ] Connectivity with other ESP boards using ESPNow and packet structure
+- [x] Button handler button
+- [x] WS2812B control 
+- [x] Connectivity with other ESP boards using ESPNow and packet structure
 - [ ] Multiprocessing 
   - [ ] Core 0 pinned to poll for incoming network packets and process them by changing cube colour
   - [ ] Core 1 pinned to interrupt on slider and button changes, and process them and send them as outgoing packets 
-- [ ] Speaker code
-  - [ ] FAT32 read from VSPI (CS pin D5)
-  - [ ] Send mono audio to speaker
-- [ ] WS2812B code
-  - [ ] Turn the LED idle state (when not much interaction) to white light
-- [ ] Schematics for final prototype
+- [x] Speaker code
+  - [-] FAT32 read from VSPI (CS pin D5)
+  - [x] Send mono audio to speaker
+  - [x] Reverse engineer XT_DAC_Audio library to play sound one note at a time
+  - [ ] More music pieces 
+- [x] WS2812B code
+  - [x] Turn the LED idle state (when not much interaction) to white light
+  - [ ] Set up idle flag for remote packets as well, if incoming packets update the system enough, then idle state is gone.
+- [x] Schematics for final prototype
