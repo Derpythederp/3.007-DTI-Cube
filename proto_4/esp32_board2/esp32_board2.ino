@@ -22,12 +22,13 @@
 #define COLOUR_STEP 0.1
 #define NUM_SONGS 4
 #define DEBOUNCEINTERVAL 100
-#define DEBUG true
+#define DEBUG false
 
 #define seconds() (millis()/1000)
 #define IDLETIME 30  // 10 seconds
 #define IDLETHRESHOLDDISTANCE 3  // in cm, to give a bit of allowance for sensor inaccuracy and jumping
 #define PACKETDELAY 100
+#define NUMMODULES 2
 // Pins
 
 /****
@@ -35,6 +36,13 @@ THINGS TO CHANGE BETWEEN MODULES:
 - LED NUMBER (ledCounts)
 - MAC ADDRESS
 - noSoundUpdate (The one to play first will have noSoundUpdate as true)
+- MusicOffset
+
+If this is the first board to play, 
+noSoundUpdate = true
+MusicOffset = 0
+localData=-1
+
 ****/
 
 /* 
@@ -133,6 +141,7 @@ struct soundncolors {
 struct soundncolors incomingBuffer; // buffer to store incoming data for deserialization
 struct soundncolors localData = {128.0, -1};  // To store old state for comparison
 struct soundncolors remoteData = {128.0, 0};  // buffer to store outgoing data
+const int MusicOffset = 0;
 
 // Idle Status counter
 float lastAction;  // in seconds
@@ -146,23 +155,22 @@ int8_t PROGMEM TwinkleTwinkle[] = {
   NOTE_G5,NOTE_G5,NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,BEAT_2,
   NOTE_G5,NOTE_G5,NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,BEAT_2,
   NOTE_C5,NOTE_C5,NOTE_G5,NOTE_G5,NOTE_A5,NOTE_A5,NOTE_G5,BEAT_2,
-  NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,NOTE_D5,NOTE_C5,BEAT_4, 
-  SCORE_END
-};
+  NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,NOTE_D5,NOTE_C5,BEAT_4
+};  // 48 Notes
 
 int8_t PROGMEM AmongUs[] = {
   NOTE_C5, NOTE_DS5, NOTE_F5, NOTE_FS5, NOTE_F5, NOTE_DS5, NOTE_C5, NOTE_AS4, NOTE_D5, NOTE_C5,
   NOTE_C5, NOTE_DS5, NOTE_F, NOTE_FS5, NOTE_F, NOTE_DS5, NOTE_FS5, NOTE_FS5, NOTE_F5, NOTE_DS5, 
-  NOTE_FS5, NOTE_F5, NOTE_DS5, SCORE_END
-};
+  NOTE_FS5, NOTE_F5, NOTE_DS5
+};  // 23 Notes
 
 int8_t PROGMEM SailingSailing[] = {
   NOTE_G4,NOTE_C5,NOTE_C5,NOTE_G4,NOTE_A4,NOTE_A4,NOTE_A4,NOTE_C5,NOTE_A4,NOTE_G4,NOTE_G4,
   NOTE_F4,NOTE_F4,NOTE_F4,NOTE_G4,NOTE_F4,NOTE_E4,NOTE_G4,NOTE_C5,NOTE_C5,NOTE_C5,NOTE_A4,
   NOTE_B4,NOTE_C5,NOTE_D5,NOTE_G4,NOTE_C5,NOTE_C5,NOTE_G4,NOTE_A4,NOTE_A4,NOTE_A4,NOTE_C5,
   NOTE_A4,NOTE_G4,NOTE_G4,NOTE_A4,NOTE_A4,NOTE_A4,NOTE_B4,NOTE_B4,NOTE_C5,NOTE_C5,NOTE_D5,
-  NOTE_D5,NOTE_E5,NOTE_C5,NOTE_D5,NOTE_B4,NOTE_C5,SCORE_END
-};
+  NOTE_D5,NOTE_E5,NOTE_C5,NOTE_D5,NOTE_B4,NOTE_C5
+}; // 50 Notes
 
 int lastPlayed = 0;
 int songPlaying = 0;
@@ -170,10 +178,11 @@ int noteCount = 0;
 
 XT_DAC_Audio_Class DacAudio(speakerPin,0);  // Initialize the Audio with GPIO 25 (DAC) and timer group 0
 
-XT_MusicScore_Class Music(TwinkleTwinkle,TEMPO_ALLEGRO,INSTRUMENT_PIANO);
-XT_MusicScore_Class Music2(TwinkleTwinkle,TEMPO_ALLEGRO,INSTRUMENT_SAXOPHONE); 
-XT_MusicScore_Class Music3(AmongUs,TEMPO_PRESTO,INSTRUMENT_ORGAN);
-XT_MusicScore_Class Music4(SailingSailing,TEMPO_PRESTISSIMO,INSTRUMENT_ORGAN);
+//  uint8_t ScoreLength , uint16_t MusicOffset, uint8_t NoteSkip
+XT_MusicScore_Class Music(TwinkleTwinkle,TEMPO_ALLEGRO,INSTRUMENT_PIANO, 48, MusicOffset, NUMMODULES);
+XT_MusicScore_Class Music2(TwinkleTwinkle,TEMPO_ALLEGRO,INSTRUMENT_SAXOPHONE, 48, MusicOffset, NUMMODULES); 
+XT_MusicScore_Class Music3(AmongUs,TEMPO_PRESTO,INSTRUMENT_ORGAN, 23, MusicOffset, NUMMODULES);
+XT_MusicScore_Class Music4(SailingSailing,TEMPO_PRESTISSIMO,INSTRUMENT_ORGAN, 50, MusicOffset, NUMMODULES);
 
 /**** Functions ****/
 
@@ -272,11 +281,13 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int data_l
   if ((abs(incomingBuffer.hue - localData.hue) > distance2colourval(IDLETHRESHOLDDISTANCE))) {
     lastAction = seconds();
   }
-  
+
   if ((localData.noteCount + 2) == incomingBuffer.noteCount) {
-    currentMusic->sendNextNote();  // the bug is that I need to send 2 notes in advance not just next note
+//    noInterrupts();
+    currentMusic->sendNextNote();
     noSoundUpdate = false;
     lastAction = seconds();
+//    interrupts();
   }
   
   memcpy(&localData, incomingData, sizeof(soundncolors));
@@ -368,11 +379,10 @@ void checkButton() {
     // reset the debouncing timer
     lastClicked = millis();
   }
-
+  
   if ((millis() - lastClicked) > DEBOUNCEINTERVAL) {
     if (reading != buttonState) {
       buttonState = reading;
-
       if (buttonState == HIGH) {
         if (DEBUG) {
           Serial.println("Button pressed!");

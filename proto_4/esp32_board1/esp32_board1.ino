@@ -140,7 +140,7 @@ struct soundncolors {
 struct soundncolors incomingBuffer; // buffer to store incoming data for deserialization
 struct soundncolors localData = {128.0, 0};  // To store old state for comparison
 struct soundncolors remoteData = {128.0, 0};  // buffer to store outgoing data
-const int MusicOffset = 0;
+const int MusicOffset = 1;
 
 // Idle Status counter
 float lastAction;  // in seconds

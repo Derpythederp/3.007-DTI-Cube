@@ -354,8 +354,10 @@ class XT_MusicScore_Class:public XT_PlayListItem_Class
 															// sample rate sent to the DAC
 															// calculated from the tempo value below
 		uint32_t ChangeNoteCounter;							// countdown counter for the above
-		uint16_t ScoreIdx;									// Index position of next note to play
+		uint16_t ScoreIdx=0;									// Index position of next note to play
     bool readySend=false;
+    uint8_t NoteSkip=1;  // By default, we skip by 1
+    uint8_t ScoreLength;
 	public:
     void sendNextNote();
 		XT_Instrument_Class *Instrument = nullptr;		    // The instrument to use. TEB, Oct-10-2019
@@ -380,10 +382,15 @@ class XT_MusicScore_Class:public XT_PlayListItem_Class
 
 
 		// constructors
-		XT_MusicScore_Class(int8_t* Score);
-		XT_MusicScore_Class(int8_t* Score,uint16_t Tempo);
-		XT_MusicScore_Class(int8_t* Score,uint16_t Tempo,XT_Instrument_Class* Instrument);
-		XT_MusicScore_Class(int8_t* Score,uint16_t Tempo,uint16_t InstrumentID);
+//		XT_MusicScore_Class(int8_t* Score);  // Depreciated
+//		XT_MusicScore_Class(int8_t* Score,uint16_t Tempo);   // Depreciated
+//		XT_MusicScore_Class(int8_t* Score,uint16_t Tempo,XT_Instrument_Class* Instrument);
+//		XT_MusicScore_Class(int8_t* Score,uint16_t Tempo,uint16_t InstrumentID);
+
+      XT_MusicScore_Class(int8_t* Score,uint16_t Tempo,XT_Instrument_Class* Instrument, uint8_t ScoreLength);
+      XT_MusicScore_Class(int8_t* Score,uint16_t Tempo,uint16_t InstrumentID, uint8_t ScoreLength);
+      XT_MusicScore_Class(int8_t* Score,uint16_t Tempo,uint16_t InstrumentID,uint8_t ScoreLength , uint16_t MusicOffset, uint8_t NoteSkip);
+      
 
 		// override functions
 		uint8_t NextByte()override;

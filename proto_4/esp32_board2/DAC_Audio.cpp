@@ -801,34 +801,52 @@ void XT_Instrument_Class::SetDuration(uint32_t Length)			// in millis
 
 //Music score class
 
-XT_MusicScore_Class::XT_MusicScore_Class(int8_t* Score):XT_MusicScore_Class(Score,TEMPO_ALLEGRO,&DEFAULT_INSTRUMENT)
-{
-	// set tempo and instrument to default, number of plays to 1 (once)
-}
+
+// Hijack note: These two don't work as well with the ScoreLength in place, not guarantee it works without glitches.
+//XT_MusicScore_Class::XT_MusicScore_Class(int8_t* Score):XT_MusicScore_Class(Score,TEMPO_ALLEGRO,&DEFAULT_INSTRUMENT)
+//{
+//	// set tempo and instrument to default, number of plays to 1 (once)
+//}
+//
+//
+//XT_MusicScore_Class::XT_MusicScore_Class(int8_t* Score,uint16_t Tempo):XT_MusicScore_Class(Score,Tempo,&DEFAULT_INSTRUMENT)
+//{
+//	// set instrument to default and plays to 1
+//}
 
 
-XT_MusicScore_Class::XT_MusicScore_Class(int8_t* Score,uint16_t Tempo):XT_MusicScore_Class(Score,Tempo,&DEFAULT_INSTRUMENT)
-{
-	// set instrument to default and plays to 1
-}
-
-
-XT_MusicScore_Class::XT_MusicScore_Class(int8_t* Score,uint16_t Tempo,XT_Instrument_Class* Instrument)
+XT_MusicScore_Class::XT_MusicScore_Class(int8_t* Score,uint16_t Tempo,XT_Instrument_Class* Instrument, uint8_t ScoreLength)
 {
 	// Create music score
 	this->Score=Score;
 	this->Tempo=Tempo;
 	this->Instrument=Instrument;
+  this->ScoreLength=ScoreLength;
 }
 
 
-XT_MusicScore_Class::XT_MusicScore_Class(int8_t* Score,uint16_t Tempo,uint16_t InstrumentID)
+XT_MusicScore_Class::XT_MusicScore_Class(int8_t* Score,uint16_t Tempo,uint16_t InstrumentID, uint8_t ScoreLength)
 {
 	// Create music score
 	this->Score=Score;
 	this->Tempo=Tempo;
 	this->Instrument=&DEFAULT_INSTRUMENT;
-	Instrument->SetInstrument(InstrumentID);
+	Instrument->SetInstrument(InstrumentID);   // Change instrument from DEFAULT_INSTRUMENT to the other preset instruments
+ // Add score length here also, since it is checked regardless
+ this->ScoreLength=ScoreLength;
+}
+
+XT_MusicScore_Class::XT_MusicScore_Class(int8_t* Score,uint16_t Tempo,uint16_t InstrumentID, uint8_t ScoreLength , uint16_t MusicOffset, uint8_t NoteSkip)
+{
+  // Hijacked constructor
+  // Create music score
+  this->Score=Score;
+  this->Tempo=Tempo;
+  this->Instrument=&DEFAULT_INSTRUMENT;
+  Instrument->SetInstrument(InstrumentID);   // Change instrument from DEFAULT_INSTRUMENT to the other preset instruments  
+  this->ScoreIdx=MusicOffset;
+  this->NoteSkip=NoteSkip;  // tbh NoteSkip is more of note increment
+  this->ScoreLength=ScoreLength;
 }
 
 
@@ -842,7 +860,7 @@ void XT_MusicScore_Class::Init()
 	// rate sent to the DAC
 	ChangeNoteEvery=(60/float(Tempo))*BytesPerSec;
 	ChangeNoteCounter=0;					// ensures starts by playing first note with no delay
-	ScoreIdx=0;								// set position to first no
+//	ScoreIdx=0;								// set position to first no, planning to replace
 }
 
 void XT_MusicScore_Class::sendNextNote() {
@@ -864,12 +882,34 @@ uint8_t XT_MusicScore_Class::NextByte()
   // The else i.e  ChangeNoteCounter--;   return Instrument->NextByte();
   // should not be covered
 
+
+  // To skip note:
+  // noteSkip=1 (by default), this means that play every note
+  // noteSkip=2 means play every other note
+  // ScoreIdx should be offsettable via constructor
+  // Replace the ScoreIdx=0 in Init() 
+
+
+  // Easiest is to replace ScoreIdx++ with ScoreIdx = ScoreIdx + noteSkip
+  // So it will skip notes every call
+  
+  // How to check if ScoreIdx goes out of bounds (buffer overflow)?
+  // Need feed in length of song also, as previously, SCORE_END was a guarantee hit so it was a reliable terminator, while now, it is not.
+  // Add the following behind if((Score[ScoreIdx]==SCORE_END) || ScoreIdx > ScoreLength) {...}:
+
+  // In summary:
+  // Add NoteSkip, ScoreLength variable (Done)
+  // SCORE_END is now obsolete in the notes (Removed --> Sync with the other)
+  // Modify constructor such that it adjusts ScoreIdx (MusicOffset), takes in NoteSkip and ScoreLength
+  // Modify all other overloads such that they function without breaking
+
+
   if (readySend) {
   	// are we ready to play another note?
   	if(ChangeNoteCounter==0)  {
   		// Yes, new note
       readySend = false;  // every new note, the readySend flag is unset so it stops playing
-  		if(Score[ScoreIdx]==SCORE_END)  // end of data
+  		if(Score[ScoreIdx]==SCORE_END || (ScoreIdx > ScoreLength))  // end of data
   		{
   			Playing=false;
   			return 0;    	// return silence
@@ -889,11 +929,12 @@ uint8_t XT_MusicScore_Class::NextByte()
   			// of players finger on the instrument.
   			Instrument->SoundDuration=Instrument->Duration*0.8;
   			ChangeNoteCounter=Instrument->Duration;      	// set back to start of count ready for next note
-  			ScoreIdx++;										// point to next note, ready for next time
+  			ScoreIdx = ScoreIdx + NoteSkip;										// point to next note, ready for next time
   		}
   		else
   		{
   			// default single beat values, all come with negative, so like -1, -2, -3, -4 
+        // Note that beats don't have a skip value, let's see how that turns out
   			Instrument->Duration=ChangeNoteEvery;
   			Instrument->SoundDuration=Instrument->Duration*0.8;  	// By default a note plays for 80% of tempo
   																// this allows for the natural movement of the
