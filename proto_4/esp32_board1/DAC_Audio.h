@@ -19,7 +19,7 @@
 #pragma once
 #include "MusicDefinitions.h"
 
-#define BUFFER_SIZE_DEFAULT 7000 			    // Size of buffer to store data to send to DAC. 3 bytes minimum!
+#define BUFFER_SIZE_DEFAULT 4000 			    // Size of buffer to store data to send to DAC. 3 bytes minimum!
 												// 4000 bytes (Default) should allow for very slow main loops
 												// that repeat only about every 100Hz, If your main loop is much faster
 												// than this and the VAST majority will be you can safely reduce this size
@@ -35,10 +35,10 @@
 												// Use the routine MaxBufferUsage in your main loop to output the max
 												// buffer memory (via serial monitor) that your loop is using, you can
 												// then set you buffer memory very precisely
-#define BytesPerSec	48000						// The rate at which bytes are sent to the DAC, note that the max
+#define BytesPerSec	50000						// The rate at which bytes are sent to the DAC, note that the max
 												// sample rate however is 44100Khz, this higher sampling rate allows
 												// for samples to be increased in pitch. If a 44100 rate then the max
-												// would be 3 x the pitch.  50000 is default
+												// would be 3 x the pitch.
 
 
 uint8_t SetVolume(uint8_t Volume);				// returns the sound byte value adjusted for the volume passed
@@ -354,8 +354,10 @@ class XT_MusicScore_Class:public XT_PlayListItem_Class
 															// sample rate sent to the DAC
 															// calculated from the tempo value below
 		uint32_t ChangeNoteCounter;							// countdown counter for the above
-		uint16_t ScoreIdx;									// Index position of next note to play
+		uint16_t ScoreIdx=0;									// Index position of next note to play
     bool readySend=false;
+    uint8_t NoteSkip=1;  // By default, we skip by 1
+    uint8_t ScoreLength;
 	public:
     void sendNextNote();
 		XT_Instrument_Class *Instrument = nullptr;		    // The instrument to use. TEB, Oct-10-2019
@@ -380,10 +382,15 @@ class XT_MusicScore_Class:public XT_PlayListItem_Class
 
 
 		// constructors
-		XT_MusicScore_Class(int8_t* Score);
-		XT_MusicScore_Class(int8_t* Score,uint16_t Tempo);
-		XT_MusicScore_Class(int8_t* Score,uint16_t Tempo,XT_Instrument_Class* Instrument);
-		XT_MusicScore_Class(int8_t* Score,uint16_t Tempo,uint16_t InstrumentID);
+//		XT_MusicScore_Class(int8_t* Score);  // Depreciated
+//		XT_MusicScore_Class(int8_t* Score,uint16_t Tempo);   // Depreciated
+//		XT_MusicScore_Class(int8_t* Score,uint16_t Tempo,XT_Instrument_Class* Instrument);
+//		XT_MusicScore_Class(int8_t* Score,uint16_t Tempo,uint16_t InstrumentID);
+
+      XT_MusicScore_Class(int8_t* Score,uint16_t Tempo,XT_Instrument_Class* Instrument, uint8_t ScoreLength);
+      XT_MusicScore_Class(int8_t* Score,uint16_t Tempo,uint16_t InstrumentID, uint8_t ScoreLength);
+      XT_MusicScore_Class(int8_t* Score,uint16_t Tempo,uint16_t InstrumentID,uint8_t ScoreLength , uint16_t MusicOffset, uint8_t NoteSkip);
+      
 
 		// override functions
 		uint8_t NextByte()override;

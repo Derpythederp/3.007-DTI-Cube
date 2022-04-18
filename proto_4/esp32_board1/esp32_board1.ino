@@ -21,13 +21,29 @@
 #define DEBUG_PAIR 0  // if true, then esp_now_is_peer_exist will be called as an additional check
 #define COLOUR_STEP 0.1
 #define NUM_SONGS 4
-#define DEBOUNCEINTERVAL 175
-#define DEBUG true
+#define DEBOUNCEINTERVAL 100
+#define DEBUG false
 
 #define seconds() (millis()/1000)
 #define IDLETIME 30  // 10 seconds
-#define IDLETHRESHOLDDISTANCE 3  // in cm, to give a bit of allowance for sensor inaccuracy
+#define IDLETHRESHOLDDISTANCE 3  // in cm, to give a bit of allowance for sensor inaccuracy and jumping
+#define PACKETDELAY 100
+#define NUMMODULES 2
 // Pins
+
+/****
+THINGS TO CHANGE BETWEEN MODULES:
+- LED NUMBER (ledCounts)
+- MAC ADDRESS
+- noSoundUpdate (The one to play first will have noSoundUpdate as true)
+- MusicOffset
+
+If this is the first board to play, 
+noSoundUpdate = true
+MusicOffset = 0
+
+****/
+
 /* 
 ESP32 in use is the 30 pin version, the flash pins are not exposed.
 ESP32 is wired currently with:
@@ -80,10 +96,7 @@ const int speakerPin = 25;
 const int ledPin1 = 26;
 const int ledPin2 = 27;
 const int buttonPin = 15;
-//const int SD_MOSI = 23;
-//const int SD_MISO = 19;
-//const int SD_CLK = 18;
-//const int SD_CS = 5;
+
 
 // Networking Definitions
 const uint8_t broadcastAddress[6] = {0x58, 0xBF, 0x25, 0x14, 0x50, 0xA0};  // ESP32 Soldered to module
@@ -107,7 +120,9 @@ volatile unsigned long stopEcho;
 float distance;
 
 // Button definitions
-int lastClicked = 0;
+unsigned int lastClicked = 0;
+int buttonState;
+int lastButtonState = LOW;  // used for edge detection of button
 
 // Interrupt Service Routine
 void ISR_ECHO();
@@ -115,13 +130,17 @@ void ISR_BUTTON();
 
 
 // Note Status and network structs
+unsigned int lastPacketSent;
+bool noSoundUpdate = false;  // One of the module will have this set to true, else there will be glitches
 struct soundncolors {
   float hue;
   int noteCount;
 };
 
-struct soundncolors localData;  // buffer to store incoming data for deserialization
-struct soundncolors remoteData;  // buffer to store outgoing data
+struct soundncolors incomingBuffer; // buffer to store incoming data for deserialization
+struct soundncolors localData = {128.0, 0};  // To store old state for comparison
+struct soundncolors remoteData = {128.0, 0};  // buffer to store outgoing data
+const int MusicOffset = 0;
 
 // Idle Status counter
 float lastAction;  // in seconds
@@ -135,32 +154,34 @@ int8_t PROGMEM TwinkleTwinkle[] = {
   NOTE_G5,NOTE_G5,NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,BEAT_2,
   NOTE_G5,NOTE_G5,NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,BEAT_2,
   NOTE_C5,NOTE_C5,NOTE_G5,NOTE_G5,NOTE_A5,NOTE_A5,NOTE_G5,BEAT_2,
-  NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,NOTE_D5,NOTE_C5,BEAT_4,  
-  NOTE_SILENCE,BEAT_5,SCORE_END
-};
+  NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,NOTE_D5,NOTE_C5,BEAT_4
+};  // 48 Notes
 
 int8_t PROGMEM AmongUs[] = {
-  NOTE_C5, NOTE_DS5, NOTE_F5, NOTE_FS5, NOTE_F5, NOTE_DS5, NOTE_C5, NOTE_AS4, NOTE_D5, NOTE_C5, NOTE_SILENCE, NOTE_SILENCE, NOTE_SILENCE,
-  NOTE_C5, NOTE_DS5, NOTE_F, NOTE_FS5, NOTE_F, NOTE_DS5, NOTE_FS5, NOTE_FS5, NOTE_F5, NOTE_DS5, NOTE_FS5, NOTE_F5, NOTE_DS5, NOTE_SILENCE, SCORE_END
-};
+  NOTE_C5, NOTE_DS5, NOTE_F5, NOTE_FS5, NOTE_F5, NOTE_DS5, NOTE_C5, NOTE_AS4, NOTE_D5, NOTE_C5,
+  NOTE_C5, NOTE_DS5, NOTE_F, NOTE_FS5, NOTE_F, NOTE_DS5, NOTE_FS5, NOTE_FS5, NOTE_F5, NOTE_DS5, 
+  NOTE_FS5, NOTE_F5, NOTE_DS5
+};  // 23 Notes
 
 int8_t PROGMEM SailingSailing[] = {
   NOTE_G4,NOTE_C5,NOTE_C5,NOTE_G4,NOTE_A4,NOTE_A4,NOTE_A4,NOTE_C5,NOTE_A4,NOTE_G4,NOTE_G4,
   NOTE_F4,NOTE_F4,NOTE_F4,NOTE_G4,NOTE_F4,NOTE_E4,NOTE_G4,NOTE_C5,NOTE_C5,NOTE_C5,NOTE_A4,
   NOTE_B4,NOTE_C5,NOTE_D5,NOTE_G4,NOTE_C5,NOTE_C5,NOTE_G4,NOTE_A4,NOTE_A4,NOTE_A4,NOTE_C5,
   NOTE_A4,NOTE_G4,NOTE_G4,NOTE_A4,NOTE_A4,NOTE_A4,NOTE_B4,NOTE_B4,NOTE_C5,NOTE_C5,NOTE_D5,
-  NOTE_D5,NOTE_E5,NOTE_C5,NOTE_D5,NOTE_B4,NOTE_C5,SCORE_END
-};
+  NOTE_D5,NOTE_E5,NOTE_C5,NOTE_D5,NOTE_B4,NOTE_C5
+}; // 50 Notes
+
 int lastPlayed = 0;
 int songPlaying = 0;
 int noteCount = 0;
 
 XT_DAC_Audio_Class DacAudio(speakerPin,0);  // Initialize the Audio with GPIO 25 (DAC) and timer group 0
 
-XT_MusicScore_Class Music(TwinkleTwinkle,TEMPO_ALLEGRO,INSTRUMENT_PIANO);
-XT_MusicScore_Class Music2(TwinkleTwinkle,TEMPO_ALLEGRO,INSTRUMENT_SAXOPHONE); 
-XT_MusicScore_Class Music3(AmongUs,TEMPO_PRESTO,INSTRUMENT_ORGAN);
-XT_MusicScore_Class Music4(SailingSailing,TEMPO_PRESTISSIMO,INSTRUMENT_ORGAN);
+//  uint8_t ScoreLength , uint16_t MusicOffset, uint8_t NoteSkip
+XT_MusicScore_Class Music(TwinkleTwinkle,TEMPO_ALLEGRO,INSTRUMENT_PIANO, 48, MusicOffset, NUMMODULES);
+XT_MusicScore_Class Music2(TwinkleTwinkle,TEMPO_ALLEGRO,INSTRUMENT_SAXOPHONE, 48, MusicOffset, NUMMODULES); 
+XT_MusicScore_Class Music3(AmongUs,TEMPO_PRESTO,INSTRUMENT_ORGAN, 23, MusicOffset, NUMMODULES);
+XT_MusicScore_Class Music4(SailingSailing,TEMPO_PRESTISSIMO,INSTRUMENT_ORGAN, 50, MusicOffset, NUMMODULES);
 
 /**** Functions ****/
 
@@ -214,10 +235,12 @@ void sendData() {
   }
   esp_err_t sendStatus = esp_now_send(broadcastAddress,(uint8_t *) &remoteData, sizeof(soundncolors));
 
-  if (sendStatus == ESP_OK) {
-    Serial.println("Sent data to remote successfully.");
-  } else {
-    Serial.println("Could not send data to remote.");
+  if (DEBUG) {
+    if (sendStatus == ESP_OK) {
+      Serial.println("Sent data to remote successfully.");
+    } else {
+      Serial.println("Could not send data to remote.");
+    }
   }
 }
 
@@ -226,26 +249,49 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int data_l
   
   // If received button and sensor data, update struct of button and sensor data
   // I know it sounds counter intutive but localData is data that is destined for the current device
-  memcpy(&localData, incomingData, sizeof(soundncolors));
+
+  // The check for idle state should be, if old localData /= incomingData defined as:
+  // 1) incomingData.Hue exceeds a threshold of IDLETHRESHOLDDISTANCE 
+  // if (abs(incomingData.Hue - localData.hue) > distance2colourval(IDLETHRESHOLDDISTANCE))
+  // 2) ((localDAta.noteCount + 2) == incomingBuffer.noteCount then noteCount is correct and that means the other module has been updated.
+  // 
+  // 
+  // Pseudo code:
+  // 1) Store in incomingBuffer, the incoming network data  (done)
+  // 2) Check if incomingBuffer has changes to the state of the current staircade module, i.e if it fails idle checks, then update lastAction (see above for criteria)
+  // 3) If ((localData.noteCount + 2) == incomingBuffer.noteCount) then the correct noteCount has been sent in --> currentMusic->sendNextNote(), noSoundUpdate flag set to false so that more notes can be checked by button
+  // 4) Just update the localData to be equal to network data after the idle check and the noteCount check
+  // Updates localData only.
+  
+  memcpy(&incomingBuffer, incomingData, sizeof(soundncolors));
+  
   if (DEBUG) {
     Serial.println();
     Serial.println("Data received!");
     Serial.println("Data from remote:"); 
     Serial.println("Sliders --> ");
-    Serial.print(localData.hue);
+    Serial.print(incomingBuffer.hue);
     Serial.println();
     Serial.println("Current note --> ");
-    Serial.print(localData.noteCount);
+    Serial.print(incomingBuffer.noteCount);
     Serial.println();
   }
-  
-  if (remoteData.noteCount != localData.noteCount) {
-    // update noteCount to the new value, the checks for noteCount is done by sender
-    remoteData.noteCount = localData.noteCount;
-    currentMusic->sendNextNote();  // next music
-//    lastPlayed = millis();  // update timer
+
+  if ((abs(incomingBuffer.hue - localData.hue) > distance2colourval(IDLETHRESHOLDDISTANCE))) {
+    lastAction = seconds();
   }
+
+  if ((localData.noteCount + 2) == incomingBuffer.noteCount) {
+//    noInterrupts();
+    currentMusic->sendNextNote();
+    noSoundUpdate = false;
+    lastAction = seconds();
+//    interrupts();
+  }
+  
+  memcpy(&localData, incomingData, sizeof(soundncolors));
 }
+
 
 float distance2colourval(float dist) {
   // Expects a distance in cm
@@ -254,7 +300,7 @@ float distance2colourval(float dist) {
 }
 
 void doMeasurement() {
-  // Does measurement of distance and updates value
+  // Does measurement of distance and updates value of remoteData.hue after converting the distance to colour value.
   unsigned long startWait;
   unsigned long timeout = 50;  // 23ms is 4m which is already out of range of sensor, we just gave it 27ms more than it needed.
 
@@ -286,6 +332,7 @@ void doMeasurement() {
       }
       distance = distanceNew;
     }
+    remoteData.hue = distance2colourval(distance);  
     interrupts();
   }
 }
@@ -298,7 +345,9 @@ void breathingColours() {
 }
 
 void setColours() { 
+  // setColours() will update the colours based on localData.hue
   FastLED.setBrightness(DEFAULT_BRIGHTNESS);
+  
   oldHue = (localData.hue > oldHue) ? oldHue + COLOUR_STEP : oldHue - COLOUR_STEP;
   for (int i = 0; i < ledCounts[0]; i++) {
     ledStrip1[i].setHue(oldHue);
@@ -320,17 +369,36 @@ void setWhite() {
 }
 
 void checkButton() {
-  // Debounce protection
-  // Add check for release
-  if (digitalRead(buttonPin) && ((millis() - lastClicked) > DEBOUNCEINTERVAL)) {
-    lastClicked = millis();  // last successful click
-    if (DEBUG) {
-      Serial.println("Button pressed!");
-      Serial.println();
-    }
-    currentMusic->sendNextNote();
-    lastAction = seconds();
+  // Only detects if button is depressed once, so that you can't hold down the button
+  // checkButton() will increment the remoteData.noteCount = localData.noteCount + 1, as well as set flag for noSoundUpdate to true so that remoteData.noteCount cannot be updated.
+  
+  int reading = digitalRead(buttonPin);
+
+  if (reading != lastButtonState) {
+    // reset the debouncing timer
+    lastClicked = millis();
   }
+  
+  if ((millis() - lastClicked) > DEBOUNCEINTERVAL) {
+    if (reading != buttonState) {
+      buttonState = reading;
+      if (buttonState == HIGH) {
+        if (DEBUG) {
+          Serial.println("Button pressed!");
+        }
+
+        if (!noSoundUpdate) {
+          if (DEBUG) {
+            Serial.println("Updating remoteData note count and locking any further ");
+          }
+          remoteData.noteCount = localData.noteCount + 1;
+          noSoundUpdate = true;
+        }
+      lastAction = seconds();
+      }
+    }
+  }
+  lastButtonState = reading;
 }
 
 void checkNewSong() {
@@ -395,6 +463,7 @@ void setup() {
   DacAudio.Play(&Music);       
   currentMusic = &Music;
   lastAction = seconds();
+  lastPacketSent = millis();
 }
 
 
@@ -408,7 +477,6 @@ void loop() {
   interrupts();
   if (millis() - lastPing >= PINGDELAY) {
     doMeasurement();
-    localData.hue = distance2colourval(distance);  // change to remoteData.hue after test
     
     if (DEBUG)
       Serial.println(String("Slider Sensor: ") + distance + " cm");  // print distance
@@ -427,6 +495,13 @@ void loop() {
     lastColorUpdate = millis();
     interrupts();
   }
+
+ // If last data sent was > PACKETDELAY, senddat
+ if (millis() - lastPacketSent > PACKETDELAY) {
+  sendData();
+  lastPacketSent = millis();
+ }
+ 
 }
 
 

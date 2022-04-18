@@ -34,9 +34,10 @@ Basically the same goals as prototype 3 but prototype 3 was a local implementati
 - [x] WS2812B control 
 - [x] Connectivity with other ESP boards using ESPNow and packet structure
 - [ ] Convert all prototype 3's local functions to remote function in prototype 4, i.e it takes from RemoteData instead
-- [ ] Multiprocessing 
+- [ ] Multiprocessing (Optional unless performance sucks)
   - [ ] Core 0 pinned to poll for incoming network packets and process them by changing cube colour
   - [ ] Core 1 pinned to interrupt on slider and button changes, and process them and send them as outgoing packets 
+- General Purpose Timer for IdleState (Optional also)
 - [x] Speaker code
   - [-] FAT32 read from VSPI (CS pin D5)
   - [x] Send mono audio to speaker
@@ -46,3 +47,4 @@ Basically the same goals as prototype 3 but prototype 3 was a local implementati
   - [x] Turn the LED idle state (when not much interaction) to white light
   - [ ] Set up idle flag for remote packets as well, if incoming packets update the system enough, then idle state is gone.
 - [x] Schematics for final prototype
+- [ ] Protect device code from overflow (or rollover) after 49.7 days (Optional)
