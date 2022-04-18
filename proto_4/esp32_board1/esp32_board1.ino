@@ -35,7 +35,6 @@
 THINGS TO CHANGE BETWEEN MODULES:
 - LED NUMBER (ledCounts)
 - MAC ADDRESS
-- noSoundUpdate (The one to play first will have noSoundUpdate as true)
 - MusicOffset
 
 If this is the first board to play, (Board2)
@@ -136,11 +135,12 @@ bool noSoundUpdate = false;  // One of the module will have this set to true, el
 struct soundncolors {
   float hue;
   int noteCount;
+  bool buttonPressed;  // if button has been pressed, to check for idle
 };
 
 struct soundncolors incomingBuffer; // buffer to store incoming data for deserialization
-struct soundncolors localData = {128.0, 0};  // To store old state for comparison
-struct soundncolors remoteData = {128.0, 0};  // buffer to store outgoing data
+struct soundncolors localData = {128.0, 0, false};  // To store old state for comparison
+struct soundncolors remoteData = {128.0, 0, false};  // buffer to store outgoing data
 const int MusicOffset = 1;
 
 // Idle Status counter
@@ -289,6 +289,12 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int data_l
     lastAction = seconds();
 //    interrupts();
   }
+
+  // Hacky workaround to sync idle
+  if (incomingBuffer.buttonPressed) {
+    // if not idle, then lastAction will be now
+    lastAction = seconds();
+  }
   
   memcpy(&localData, incomingData, sizeof(soundncolors));
 }
@@ -387,15 +393,17 @@ void checkButton() {
         if (DEBUG) {
           Serial.println("Button pressed!");
         }
-
+        remoteData.buttonPressed=true;
         if (!noSoundUpdate) {
           if (DEBUG) {
-            Serial.println("Updating remoteData note count and locking any further ");
+            Serial.println("Updating remoteData note count and locking any further updates");
           }
           remoteData.noteCount = localData.noteCount + 1;
           noSoundUpdate = true;
         }
       lastAction = seconds();
+      } else {
+        remoteData.buttonPressed=false;
       }
     }
   }
@@ -436,9 +444,10 @@ void checkNewSong() {
 void setup() {
   Serial.begin(115200);
   Serial.println();
-
+  
   // Init WiFi and ESPNow
   WiFi.mode(WIFI_STA);
+  delay(1000);
   initESPNow();
   esp_now_register_recv_cb(OnDataRecv);
   initBroadcastPeer();

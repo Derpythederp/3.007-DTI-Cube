@@ -4,39 +4,14 @@
 #include <SD.h>
 #include <esp_now.h>
 #include "DAC_Audio.h"
+#include "../settings.h"
 
-#define SLIDER_DIST 15
-
-#define PINGDELAY 200
-#define SOUND_MUL 0.0343
-#define COLOUR_STEP 0.3
-#define COLORDELAY 10
-#define MIN_BRIGHTNESS 8
-#define MAX_BRIGHTNESS 255
-#define DEFAULT_BRIGHTNESS 128         
-
-#define REMOTE_BUTTON_COUNT 1
-#define MAX_ESPNOW_FAILURES 10
-#define CHANNEL 1  // Both sender and reciever has to be on the same channel
-#define DEBUG_PAIR 0  // if true, then esp_now_is_peer_exist will be called as an additional check
-#define COLOUR_STEP 0.1
-#define NUM_SONGS 4
-#define DEBOUNCEINTERVAL 100
-#define DEBUG false
-#define DEBUG_PAIR true  // if true, then esp_now_is_peer_exist will be called as an additional check
-
-#define seconds() (millis()/1000)
-#define IDLETIME 30  // 10 seconds
-#define IDLETHRESHOLDDISTANCE 3  // in cm, to give a bit of allowance for sensor inaccuracy and jumping
-#define PACKETDELAY 100
-#define NUMMODULES 2
 // Pins
 
 /****
 THINGS TO CHANGE BETWEEN MODULES:
 - LED NUMBER (ledCounts)
 - MAC ADDRESS
-- noSoundUpdate (The one to play first will have noSoundUpdate as true)
 - MusicOffset
 
 If this is the first board to play, 
@@ -133,15 +108,16 @@ void ISR_BUTTON();
 
 // Note Status and network structs
 unsigned int lastPacketSent;
-bool noSoundUpdate = true;  // One of the module will have this set to true, else there will be glitches
+bool noSoundUpdate = false;  // One of the module will have this set to true, else there will be glitches
 struct soundncolors {
   float hue;
   int noteCount;
+  bool buttonPressed;  // if button has been pressed, to check for idle
 };
 
 struct soundncolors incomingBuffer; // buffer to store incoming data for deserialization
-struct soundncolors localData = {128.0, -1};  // To store old state for comparison
-struct soundncolors remoteData = {128.0, 0};  // buffer to store outgoing data
+struct soundncolors localData = {128.0, -1, false};  // To store old state for comparison
+struct soundncolors remoteData = {128.0, 0, false};  // buffer to store outgoing data
 const int MusicOffset = 0;
 
 // Idle Status counter
@@ -290,6 +266,12 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int data_l
     lastAction = seconds();
 //    interrupts();
   }
+
+  // Hacky workaround to sync idle
+  if (incomingBuffer.buttonPressed) {
+    // if not idle, then lastAction will be now
+    lastAction = seconds();
+  }
   
   memcpy(&localData, incomingData, sizeof(soundncolors));
 }
@@ -388,15 +370,17 @@ void checkButton() {
         if (DEBUG) {
           Serial.println("Button pressed!");
         }
-
+        remoteData.buttonPressed=true;
         if (!noSoundUpdate) {
           if (DEBUG) {
-            Serial.println("Updating remoteData note count and locking any further ");
+            Serial.println("Updating remoteData note count and locking any further updates");
           }
           remoteData.noteCount = localData.noteCount + 1;
           noSoundUpdate = true;
         }
       lastAction = seconds();
+      } else {
+        remoteData.buttonPressed=false;
       }
     }
   }
@@ -440,6 +424,7 @@ void setup() {
 
   // Init WiFi and ESPNow
   WiFi.mode(WIFI_STA);
+  delay(1000);
   initESPNow();
   esp_now_register_recv_cb(OnDataRecv);
   initBroadcastPeer();
