@@ -4,7 +4,7 @@
 #include <SD.h>
 #include <esp_now.h>
 #include "DAC_Audio.h"
-#include "../settings.h"
+#include "settings.h"
 
 // Pins
 
@@ -394,24 +394,28 @@ void checkNewSong() {
     switch (songPlaying % NUM_SONGS) {
       case 0:
         Serial.println("Playing Twinkle Piano");
+        Music.ResetFromOffset(MusicOffset);
         DacAudio.Play(&Music, false);
         currentMusic = &Music;
         break;
       case 1:
+        Music2.ResetFromOffset(MusicOffset);
         Serial.println("Playing Twinkle Organ");
         DacAudio.Play(&Music2, false);
         currentMusic = &Music2; 
         break;        
       case 2:
+        Music3.ResetFromOffset(MusicOffset);
         Serial.println("Playing Amongus");
         DacAudio.Play(&Music3, false);
         currentMusic = &Music3;
         break;
       case 3:
+        Music4.ResetFromOffset(MusicOffset);
         Serial.println("Playing Sailing Sailing");
         DacAudio.Play(&Music4, false);
         currentMusic = &Music4;
-        break;    
+        break;   
     }
     noteCount = 0;  // reset note count for the next song
   }

@@ -2,8 +2,8 @@
 
 #define PINGDELAY 200
 #define SOUND_MUL 0.0343
-#define COLOUR_STEP 0.3
-#define COLORDELAY 10
+#define COLOUR_STEP 0.8
+#define COLORDELAY 8
 #define MIN_BRIGHTNESS 8  // Lower bound for idle state
 #define MAX_BRIGHTNESS 255  // Upper bound for idle state
 #define DEFAULT_BRIGHTNESS 128         

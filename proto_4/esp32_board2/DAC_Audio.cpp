@@ -918,7 +918,6 @@ uint8_t XT_MusicScore_Class::NextByte()
   		Instrument->Note=abs(Score[ScoreIdx]);			// convert the negative value to positive index.
 //  		ScoreIdx++;										// move to next note
       ScoreIdx = ScoreIdx + NoteSkip;      //move to next note
-      Serial.println(ScoreIdx);
   
   		// set length of play for instrument
   		// Check next data value to see if it is a beat value
@@ -966,7 +965,10 @@ void XT_MusicScore_Class::SetInstrument(uint16_t InstrumentID)
 	Instrument->SetInstrument(InstrumentID);
 }
 
-
+void XT_MusicScore_Class::ResetFromOffset(uint8_t MusicOffset) {
+  ScoreIdx=MusicOffset;
+  Playing=true;
+}
 
 
 

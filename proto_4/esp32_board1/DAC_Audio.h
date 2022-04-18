@@ -396,6 +396,7 @@ class XT_MusicScore_Class:public XT_PlayListItem_Class
 		uint8_t NextByte()override;
 		void Init()override;
 		void SetInstrument(uint16_t InstrumentID);
+    void ResetFromOffset(uint8_t MusicOffset);
 
 };
 

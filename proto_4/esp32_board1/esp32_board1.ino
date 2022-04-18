@@ -4,31 +4,9 @@
 #include <SD.h>
 #include <esp_now.h>
 #include "DAC_Audio.h"
+#include "settings.h"
 
-#define SLIDER_DIST 15
 
-#define PINGDELAY 200
-#define SOUND_MUL 0.0343
-#define COLOUR_STEP 0.3
-#define COLORDELAY 10
-#define MIN_BRIGHTNESS 8
-#define MAX_BRIGHTNESS 255
-#define DEFAULT_BRIGHTNESS 128         
-
-#define REMOTE_BUTTON_COUNT 1
-#define MAX_ESPNOW_FAILURES 10
-#define CHANNEL 1  // Both sender and reciever has to be on the same channel
-#define COLOUR_STEP 0.1
-#define NUM_SONGS 4
-#define DEBOUNCEINTERVAL 100
-#define DEBUG false
-#define DEBUG_PAIR true  // if true, then esp_now_is_peer_exist will be called as an additional check
-
-#define seconds() (millis()/1000)
-#define IDLETIME 30  // 10 seconds
-#define IDLETHRESHOLDDISTANCE 3  // in cm, to give a bit of allowance for sensor inaccuracy and jumping
-#define PACKETDELAY 100
-#define NUMMODULES 2
 // Pins
 
 /****
@@ -417,24 +395,28 @@ void checkNewSong() {
     switch (songPlaying % NUM_SONGS) {
       case 0:
         Serial.println("Playing Twinkle Piano");
+        Music.ResetFromOffset(MusicOffset);
         DacAudio.Play(&Music, false);
         currentMusic = &Music;
         break;
       case 1:
+        Music2.ResetFromOffset(MusicOffset);
         Serial.println("Playing Twinkle Organ");
         DacAudio.Play(&Music2, false);
         currentMusic = &Music2; 
         break;        
       case 2:
+        Music3.ResetFromOffset(MusicOffset);
         Serial.println("Playing Amongus");
         DacAudio.Play(&Music3, false);
         currentMusic = &Music3;
         break;
       case 3:
+        Music4.ResetFromOffset(MusicOffset);
         Serial.println("Playing Sailing Sailing");
         DacAudio.Play(&Music4, false);
         currentMusic = &Music4;
-        break;    
+        break;       
     }
     noteCount = 0;  // reset note count for the next song
   }
@@ -470,10 +452,12 @@ void setup() {
   FastLED.setBrightness(DEFAULT_BRIGHTNESS);
 
   // Init audio files locally
+  noInterrupts();
   DacAudio.Play(&Music);       
   currentMusic = &Music;
   lastAction = seconds();
   lastPacketSent = millis();
+  interrupts();
 }
 
 
