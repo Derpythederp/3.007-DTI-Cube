@@ -916,7 +916,9 @@ uint8_t XT_MusicScore_Class::NextByte()
   		}
   
   		Instrument->Note=abs(Score[ScoreIdx]);			// convert the negative value to positive index.
-  		ScoreIdx++;										// move to next note
+//  		ScoreIdx++;										// move to next note
+      ScoreIdx = ScoreIdx + NoteSkip;      //move to next note
+      Serial.println(ScoreIdx);
   
   		// set length of play for instrument
   		// Check next data value to see if it is a beat value
@@ -930,6 +932,8 @@ uint8_t XT_MusicScore_Class::NextByte()
   			Instrument->SoundDuration=Instrument->Duration*0.8;
   			ChangeNoteCounter=Instrument->Duration;      	// set back to start of count ready for next note
   			ScoreIdx = ScoreIdx + NoteSkip;										// point to next note, ready for next time
+        // Above was ScoreIdx++
+        Serial.println(ScoreIdx);
   		}
   		else
   		{

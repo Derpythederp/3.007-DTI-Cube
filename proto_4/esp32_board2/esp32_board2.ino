@@ -23,6 +23,7 @@
 #define NUM_SONGS 4
 #define DEBOUNCEINTERVAL 100
 #define DEBUG false
+#define DEBUG_PAIR true  // if true, then esp_now_is_peer_exist will be called as an additional check
 
 #define seconds() (millis()/1000)
 #define IDLETIME 30  // 10 seconds
@@ -40,7 +41,7 @@ THINGS TO CHANGE BETWEEN MODULES:
 
 If this is the first board to play, 
 noSoundUpdate = true
-MusicOffset = 0
+MusicOffset = -1
 localData=-1
 
 ****/
@@ -150,13 +151,13 @@ float lastAction;  // in seconds
 XT_MusicScore_Class *currentMusic;
 
 int8_t PROGMEM TwinkleTwinkle[] = {
-  NOTE_C5,NOTE_C5,NOTE_G5,NOTE_G5,NOTE_A5,NOTE_A5,NOTE_G5,BEAT_2,
-  NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,NOTE_D5,NOTE_C5,BEAT_2,
-  NOTE_G5,NOTE_G5,NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,BEAT_2,
-  NOTE_G5,NOTE_G5,NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,BEAT_2,
-  NOTE_C5,NOTE_C5,NOTE_G5,NOTE_G5,NOTE_A5,NOTE_A5,NOTE_G5,BEAT_2,
-  NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,NOTE_D5,NOTE_C5,BEAT_4
-};  // 48 Notes
+  NOTE_C5,NOTE_C5,NOTE_G5,NOTE_G5,NOTE_A5,NOTE_A5,NOTE_G5,
+  NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,NOTE_D5,NOTE_C5,
+  NOTE_G5,NOTE_G5,NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,
+  NOTE_G5,NOTE_G5,NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,
+  NOTE_C5,NOTE_C5,NOTE_G5,NOTE_G5,NOTE_A5,NOTE_A5,NOTE_G5,
+  NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,NOTE_D5,NOTE_C5
+  };  // 48 Notes
 
 int8_t PROGMEM AmongUs[] = {
   NOTE_C5, NOTE_DS5, NOTE_F5, NOTE_FS5, NOTE_F5, NOTE_DS5, NOTE_C5, NOTE_AS4, NOTE_D5, NOTE_C5,
@@ -281,7 +282,7 @@ void OnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int data_l
   if ((abs(incomingBuffer.hue - localData.hue) > distance2colourval(IDLETHRESHOLDDISTANCE))) {
     lastAction = seconds();
   }
-
+  
   if ((localData.noteCount + 2) == incomingBuffer.noteCount) {
 //    noInterrupts();
     currentMusic->sendNextNote();
@@ -461,10 +462,12 @@ void setup() {
   FastLED.setBrightness(DEFAULT_BRIGHTNESS);
 
   // Init audio files locally
+  noInterrupts();
   DacAudio.Play(&Music);       
   currentMusic = &Music;
   lastAction = seconds();
   lastPacketSent = millis();
+  interrupts();
 }
 
 
@@ -502,7 +505,6 @@ void loop() {
   sendData();
   lastPacketSent = millis();
  }
- 
 }
 
 

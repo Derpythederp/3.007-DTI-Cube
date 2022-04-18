@@ -18,11 +18,11 @@
 #define REMOTE_BUTTON_COUNT 1
 #define MAX_ESPNOW_FAILURES 10
 #define CHANNEL 1  // Both sender and reciever has to be on the same channel
-#define DEBUG_PAIR 0  // if true, then esp_now_is_peer_exist will be called as an additional check
 #define COLOUR_STEP 0.1
 #define NUM_SONGS 4
 #define DEBOUNCEINTERVAL 100
 #define DEBUG false
+#define DEBUG_PAIR true  // if true, then esp_now_is_peer_exist will be called as an additional check
 
 #define seconds() (millis()/1000)
 #define IDLETIME 30  // 10 seconds
@@ -38,9 +38,10 @@ THINGS TO CHANGE BETWEEN MODULES:
 - noSoundUpdate (The one to play first will have noSoundUpdate as true)
 - MusicOffset
 
-If this is the first board to play, 
+If this is the first board to play, (Board2)
 noSoundUpdate = true
 MusicOffset = 0
+localData=-1
 
 ****/
 
@@ -149,13 +150,13 @@ float lastAction;  // in seconds
 XT_MusicScore_Class *currentMusic;
 
 int8_t PROGMEM TwinkleTwinkle[] = {
-  NOTE_C5,NOTE_C5,NOTE_G5,NOTE_G5,NOTE_A5,NOTE_A5,NOTE_G5,BEAT_2,
-  NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,NOTE_D5,NOTE_C5,BEAT_2,
-  NOTE_G5,NOTE_G5,NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,BEAT_2,
-  NOTE_G5,NOTE_G5,NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,BEAT_2,
-  NOTE_C5,NOTE_C5,NOTE_G5,NOTE_G5,NOTE_A5,NOTE_A5,NOTE_G5,BEAT_2,
-  NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,NOTE_D5,NOTE_C5,BEAT_4
-};  // 48 Notes
+  NOTE_C5,NOTE_C5,NOTE_G5,NOTE_G5,NOTE_A5,NOTE_A5,NOTE_G5,
+  NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,NOTE_D5,NOTE_C5,
+  NOTE_G5,NOTE_G5,NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,
+  NOTE_G5,NOTE_G5,NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,
+  NOTE_C5,NOTE_C5,NOTE_G5,NOTE_G5,NOTE_A5,NOTE_A5,NOTE_G5,
+  NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,NOTE_D5,NOTE_C5
+  };  // 48 Notes
 
 int8_t PROGMEM AmongUs[] = {
   NOTE_C5, NOTE_DS5, NOTE_F5, NOTE_FS5, NOTE_F5, NOTE_DS5, NOTE_C5, NOTE_AS4, NOTE_D5, NOTE_C5,
@@ -501,7 +502,6 @@ void loop() {
   sendData();
   lastPacketSent = millis();
  }
- 
 }
 
 
