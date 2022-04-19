@@ -86,9 +86,9 @@ int ESPNow_Fail_Count = 0;
 // LED definitions 
 float oldHue = 128.0;  // for cross fade
 float lastColorUpdate;
-const int ledCounts[] = {3, 3};  // In order, GPIO 26 and 27
-CRGB ledStrip1[3];  
-CRGB ledStrip2[3];
+const int ledCounts[] = {64, 64};  // In order, GPIO 26 and 27
+CRGB ledStrip1[64];  
+CRGB ledStrip2[64];
 
 // Ultrasonic sensor Definitions
 unsigned long lastPing;
@@ -126,6 +126,22 @@ float lastAction;  // in seconds
 // Music definitions 
 XT_MusicScore_Class *currentMusic;
 
+int8_t PROGMEM WayBackThen[] = {
+  NOTE_B4,NOTE_B4,NOTE_B4,
+  NOTE_B4,NOTE_B4,NOTE_B4,
+  NOTE_DS5,NOTE_B4,NOTE_B4,NOTE_A4,NOTE_G4,NOTE_A4,NOTE_B4,
+  NOTE_B4,NOTE_B4,NOTE_B4,
+  NOTE_B4,NOTE_B4,NOTE_B4,
+  NOTE_B4,NOTE_A4,NOTE_G4,NOTE_A4,NOTE_G4,NOTE_E4,NOTE_E4
+};  // 26 Notes
+
+int8_t PROGMEM PinkSoldiers[] = {
+  NOTE_GS4, NOTE_F4, NOTE_GS4, NOTE_F4, NOTE_GS4, NOTE_G4, NOTE_GS4, NOTE_G4, 
+  NOTE_GS4, NOTE_F4, NOTE_GS4, NOTE_F4, NOTE_GS4, NOTE_G4, NOTE_GS4, NOTE_GS4, NOTE_CS4, NOTE_GS4, 
+  NOTE_CS4, NOTE_GS4, NOTE_G4, NOTE_GS4, NOTE_G4, NOTE_GS4, NOTE_F4, NOTE_GS4, NOTE_F4, 
+  NOTE_GS4, NOTE_G4, NOTE_GS4, NOTE_G4, NOTE_G4
+};  // 34 Notes
+
 int8_t PROGMEM TwinkleTwinkle[] = {
   NOTE_C5,NOTE_C5,NOTE_G5,NOTE_G5,NOTE_A5,NOTE_A5,NOTE_G5,
   NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,NOTE_D5,NOTE_C5,
@@ -149,18 +165,45 @@ int8_t PROGMEM SailingSailing[] = {
   NOTE_D5,NOTE_E5,NOTE_C5,NOTE_D5,NOTE_B4,NOTE_C5
 }; // 50 Notes
 
+int8_t PROGMEM MegaSong[] = {
+  NOTE_C5,NOTE_C5,NOTE_G5,NOTE_G5,NOTE_A5,NOTE_A5,NOTE_G5,
+  NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,NOTE_D5,NOTE_C5,
+  NOTE_G5,NOTE_G5,NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,
+  NOTE_G5,NOTE_G5,NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,
+  NOTE_C5,NOTE_C5,NOTE_G5,NOTE_G5,NOTE_A5,NOTE_A5,NOTE_G5,
+  NOTE_F5,NOTE_F5,NOTE_E5,NOTE_E5,NOTE_D5,NOTE_D5,NOTE_C5,
+  NOTE_G4,NOTE_C5,NOTE_C5,NOTE_G4,NOTE_A4,NOTE_A4,NOTE_A4,NOTE_C5,NOTE_A4,NOTE_G4,NOTE_G4,
+  NOTE_F4,NOTE_F4,NOTE_F4,NOTE_G4,NOTE_F4,NOTE_E4,NOTE_G4,NOTE_C5,NOTE_C5,NOTE_C5,NOTE_A4,
+  NOTE_B4,NOTE_C5,NOTE_D5,NOTE_G4,NOTE_C5,NOTE_C5,NOTE_G4,NOTE_A4,NOTE_A4,NOTE_A4,NOTE_C5,
+  NOTE_A4,NOTE_G4,NOTE_G4,NOTE_A4,NOTE_A4,NOTE_A4,NOTE_B4,NOTE_B4,NOTE_C5,NOTE_C5,NOTE_D5,
+  NOTE_D5,NOTE_E5,NOTE_C5,NOTE_D5,NOTE_B4,NOTE_C5,
+  NOTE_B4,NOTE_B4,NOTE_B4,
+  NOTE_B4,NOTE_B4,NOTE_B4,
+  NOTE_DS5,NOTE_B4,NOTE_B4,NOTE_A4,NOTE_G4,NOTE_A4,NOTE_B4,
+  NOTE_B4,NOTE_B4,NOTE_B4,
+  NOTE_B4,NOTE_B4,NOTE_B4,
+  NOTE_B4,NOTE_A4,NOTE_G4,NOTE_A4,NOTE_G4,NOTE_E4,NOTE_E4,
+  NOTE_GS4, NOTE_F4, NOTE_GS4, NOTE_F4, NOTE_GS4, NOTE_G4, NOTE_GS4, NOTE_G4, 
+  NOTE_GS4, NOTE_F4, NOTE_GS4, NOTE_F4, NOTE_GS4, NOTE_G4, NOTE_GS4, NOTE_GS4, NOTE_CS4, NOTE_GS4, 
+  NOTE_CS4, NOTE_GS4, NOTE_G4, NOTE_GS4, NOTE_G4, NOTE_GS4, NOTE_F4, NOTE_GS4, NOTE_F4, 
+  NOTE_GS4, NOTE_G4, NOTE_GS4, NOTE_G4, NOTE_G4
+  NOTE_C5, NOTE_DS5, NOTE_F5, NOTE_FS5, NOTE_F5, NOTE_DS5, NOTE_C5, NOTE_AS4, NOTE_D5, NOTE_C5,
+  NOTE_C5, NOTE_DS5, NOTE_F, NOTE_FS5, NOTE_F, NOTE_DS5, NOTE_FS5, NOTE_FS5, NOTE_F5, NOTE_DS5, 
+  NOTE_FS5, NOTE_F5, NOTE_DS5,
+}; // 181 Notes
+
 int lastPlayed = 0;
 int songPlaying = 0;
 int noteCount = 0;
 
 XT_DAC_Audio_Class DacAudio(speakerPin,0);  // Initialize the Audio with GPIO 25 (DAC) and timer group 0
 
-//  uint8_t ScoreLength , uint16_t MusicOffset, uint8_t NoteSkip
-XT_MusicScore_Class Music(TwinkleTwinkle,TEMPO_ALLEGRO,INSTRUMENT_PIANO, 48, MusicOffset, NUMMODULES);
-XT_MusicScore_Class Music2(TwinkleTwinkle,TEMPO_ALLEGRO,INSTRUMENT_SAXOPHONE, 48, MusicOffset, NUMMODULES); 
+XT_MusicScore_Class Music(MegaSong,TEMPO_ALLEGRO,INSTRUMENT_PIANO, 181, MusicOffset, NUMMODULES);
+XT_MusicScore_Class Music2(TwinkleTwinkle,TEMPO_ALLEGRO,INSTRUMENT_ORGAN, 48, MusicOffset, NUMMODULES); 
 XT_MusicScore_Class Music3(AmongUs,TEMPO_PRESTO,INSTRUMENT_ORGAN, 23, MusicOffset, NUMMODULES);
 XT_MusicScore_Class Music4(SailingSailing,TEMPO_PRESTISSIMO,INSTRUMENT_ORGAN, 50, MusicOffset, NUMMODULES);
-
+XT_MusicScore_Class Music5(WayBackThen,TEMPO_ALLEGRO,INSTRUMENT_ORGAN, 26, MusicOffset, NUMMODULES);
+XT_MusicScore_Class Music6(PinkSoldiers,TEMPO_ALLEGRO,INSTRUMENT_ORGAN, 34, MusicOffset, NUMMODULES);
 /**** Functions ****/
 
 void initESPNow() {
@@ -212,7 +255,7 @@ void sendData() {
     Serial.println();
   }
   esp_err_t sendStatus = esp_now_send(broadcastAddress,(uint8_t *) &remoteData, sizeof(soundncolors));
-
+  
   if (DEBUG) {
     if (sendStatus == ESP_OK) {
       Serial.println("Sent data to remote successfully.");
@@ -220,6 +263,8 @@ void sendData() {
       Serial.println("Could not send data to remote.");
     }
   }
+  
+  remoteData.buttonPressed=false;  // Just as a fail safe, this should always be set to false unless pressed
 }
 
 
@@ -388,12 +433,12 @@ void checkButton() {
 }
 
 void checkNewSong() {
-    if (Music.Playing==false && Music2.Playing==false && Music3.Playing==false && Music4.Playing==false) {
+    if (Music.Playing==false && Music2.Playing==false && Music3.Playing==false && Music4.Playing==false && Music5.Playing==false && Music6.Playing==false) {
     Serial.println("Switching Songs!");
     songPlaying++;
     switch (songPlaying % NUM_SONGS) {
       case 0:
-        Serial.println("Playing Twinkle Piano");
+        Serial.println("Playing Mega Song");
         Music.ResetFromOffset(MusicOffset);
         DacAudio.Play(&Music, false);
         currentMusic = &Music;
@@ -415,6 +460,18 @@ void checkNewSong() {
         Serial.println("Playing Sailing Sailing");
         DacAudio.Play(&Music4, false);
         currentMusic = &Music4;
+        break;       
+      case 4:
+        Music5.ResetFromOffset(MusicOffset);
+        Serial.println("Playing Way Back Then");
+        DacAudio.Play(&Music5, false);
+        currentMusic = &Music5;
+        break;       
+      case 5:
+        Music5.ResetFromOffset(MusicOffset);
+        Serial.println("Playing Pink Soldiers");
+        DacAudio.Play(&Music6, false);
+        currentMusic = &Music6;
         break;   
     }
     noteCount = 0;  // reset note count for the next song

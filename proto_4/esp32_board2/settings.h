@@ -2,17 +2,17 @@
 
 #define PINGDELAY 200
 #define SOUND_MUL 0.0343
-#define COLOUR_STEP 0.8
-#define COLORDELAY 8
+#define COLOUR_STEP 1.2
+#define COLORDELAY 5
 #define MIN_BRIGHTNESS 8  // Lower bound for idle state
-#define MAX_BRIGHTNESS 255  // Upper bound for idle state
-#define DEFAULT_BRIGHTNESS 128         
+#define MAX_BRIGHTNESS 128  // Upper bound for idle state
+#define DEFAULT_BRIGHTNESS 85         
 
 #define REMOTE_BUTTON_COUNT 1
 #define MAX_ESPNOW_FAILURES 10
 #define CHANNEL 1  // Both sender and reciever has to be on the same channel
 #define COLOUR_STEP 0.1
-#define NUM_SONGS 4
+#define NUM_SONGS 6
 #define DEBOUNCEINTERVAL 100
 #define DEBUG false
 #define DEBUG_PAIR true  // if true, then esp_now_is_peer_exist will be called as an additional check
