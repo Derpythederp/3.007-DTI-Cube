@@ -48,3 +48,7 @@ Basically the same goals as prototype 3 but prototype 3 was a local implementati
   - [x] Set up idle flag for remote packets as well, if incoming packets update the system enough, then idle state is gone.
 - [x] Schematics for final prototype
 - [ ] Protect device code from overflow (or rollover) after 49.7 days (Optional)
+
+
+## Project status
+As of right now, considered done. Sadly one of the boards has a broken Schottky diode for the USB connection, so it can only be flashed if we risk the backflow of current that can destroy my commputer and short the diode in a really hacky way. No more adjustments will be made.
