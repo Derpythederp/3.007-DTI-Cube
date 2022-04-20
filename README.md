@@ -1,7 +1,11 @@
-# 3.007-DTI-Cube
-Tis but a cube. Two cubes to be exact.
+# 3.007-DTI-Cube (Not really)
+~~Tis but a cube. Two cubes to be exact.~~
 
 ![fidget cube](assets/cube.jpg)
+
+Tis but a staircade, building bonds one step at a time.
+
+![Staircade animation](assets/staircade.gif)
 
 
 ## Prototype 1
@@ -52,3 +56,5 @@ Basically the same goals as prototype 3 but prototype 3 was a local implementati
 
 ## Project status
 As of right now, considered done. Sadly one of the boards has a broken Schottky diode for the USB connection, so it can only be flashed if we risk the backflow of current that can destroy my commputer and short the diode in a really hacky way. No more adjustments will be made.
+
+![Final Physical Prototype](/assets/success.png)
