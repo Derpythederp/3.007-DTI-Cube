@@ -3,7 +3,7 @@
 
 ![fidget cube](assets/cube.jpg)
 
-Tis but a staircade, building bonds one step at a time.
+Tis but a staircade, encounters one step at a time.
 
 ![Staircade animation](assets/staircade.gif)
 
